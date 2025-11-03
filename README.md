@@ -1,5 +1,8 @@
 # ApiSync
 
+Author: nir averbuch
+Date: 03.11.2025
+
 A FastAPI application with WebSocket support for real-time payload monitoring. Includes a web-based frontend dashboard to visualize received payloads.
 
 ## Features
