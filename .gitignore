@@ -1,0 +1,75 @@
+# Environment variables and credentials - NEVER COMMIT THESE!
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+auth/.env
+auth/*.json
+auth/read_BQ.json
+*.json
+!.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Test output
+test_script/output/
+*.csv
+!test_script/README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Frontend build (if you add build tools later)
+node_modules/
+.next/
+out/
+build/
+
+# Coverage reports
+.coverage
+htmlcov/
+.pytest_cache/
+.coverage.*
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
