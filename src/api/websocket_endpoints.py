@@ -134,12 +134,22 @@ async def websocket_ping(websocket: WebSocket):
                 )
                 validation = await validate_sensor_lla(hostname, mac_address, LLA)
                 validation_duration = time.time() - validation_start
-                logger.info(
-                    f"[WEBSOCKET_PING] Validation completed | "
-                    f"Result: {'VALID' if validation['is_valid'] else 'INVALID'} | "
-                    f"Message: {validation['message']} | "
-                    f"Duration: {validation_duration:.3f}s"
-                )
+                
+                # Log as WARNING if invalid, INFO if valid
+                if validation['is_valid']:
+                    logger.info(
+                        f"[WEBSOCKET_PING] Validation completed | "
+                        f"Result: VALID | "
+                        f"Message: {validation['message']} | "
+                        f"Duration: {validation_duration:.3f}s"
+                    )
+                else:
+                    logger.warning(
+                        f"[WEBSOCKET_PING] Validation completed | "
+                        f"Result: INVALID | "
+                        f"Message: {validation['message']} | "
+                        f"Duration: {validation_duration:.3f}s"
+                    )
             else:
                 validation = {
                     "is_valid": False,

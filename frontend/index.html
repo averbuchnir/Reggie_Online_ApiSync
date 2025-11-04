@@ -748,6 +748,10 @@
             
             console.log('Event listeners attached');
             console.log('WebSocket URL will be:', getWebSocketUrl());
+            
+            // Automatically connect on page load
+            console.log('Auto-connecting WebSocket...');
+            connectWebSocket();
         });
         
         // Clean up on page unload

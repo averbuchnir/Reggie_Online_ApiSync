@@ -5,6 +5,7 @@ Install: pip install websockets
 import asyncio
 import json
 import websockets
+import random
 
 async def test_websocket():
     uri = "ws://localhost:8000/ws/ping"
@@ -77,7 +78,10 @@ async def test_websocket():
     try:
         async with websockets.connect(uri) as websocket:
             for i, payload in enumerate(payloads, 1):
-                print(f"\nSending payload {i}/{len(payloads)}: {payload}")
+                # generate random delay between 0.5 and 1 seconds
+                delay = random.uniform(0.5, 1.5)
+                await asyncio.sleep(delay)
+                print(f"\nSending payload {i}/{len(payloads)}: {payload}- delay: {delay} seconds")
                 await websocket.send(json.dumps(payload))
                 
                 response = await websocket.recv()
