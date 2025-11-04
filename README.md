@@ -412,17 +412,14 @@ python test_script/2.test_bigquery.py -d f4d_test -t aaaaaaaaaaaa_metadata
 
 ```env
 # Required
-GCP_PROJECT_ID=iucc-f4d
-GCP_CLIENT_EMAIL=query-from-bq@iucc-f4d.iam.gserviceaccount.com
-GCP_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDV/0qYhdMbBGIO\\n... (rest with \\n)\\n-----END PRIVATE KEY-----
-
+GCP_PROJECT_ID=
+GCP_CLIENT_EMAIL=
+GCP_PRIVATE_KEY=
 # Optional but recommended
-GCP_AUTH_URI=https://accounts.google.com/o/oauth2/auth
-GCP_TOKEN_URI=https://oauth2.googleapis.com/token
-GCP_auth_provider_x509_cert_url=https://www.googleapis.com/oauth2/v1/certs
-GCP_CLIENT_ID=114940523003685681884
-GCP_PRIVATE_KEY_ID=70720cec56d8c90319dcd4cbffbe7f8861300fe1
-GCP_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/query-from-bq%40iucc-f4d.iam.gserviceaccount.com
+GCP_AUTH_URI=
+GCP_CLIENT_ID=
+GCP_PRIVATE_KEY_ID=
+GCP_CLIENT_X509_CERT_URL=
 ```
 
 2. **Private Key Format**: In your `.env` file, replace actual newlines in the private key with `\\n`. The code will automatically convert them back.
@@ -529,94 +526,93 @@ Example log output:
 
 ### System Architecture Scheme
 
-```mermaid
-graph TB
-    subgraph ClientLayer["CLIENT LAYER"]
-        WSClient["WebSocket Client<br/>(Frontend)"]
-        HTTPClient["HTTP GET Requests<br/>(Frontend)"]
-    end
-    
-    subgraph FastAPIServer["FASTAPI SERVER (Port 8000)"]
-        CORSMiddleware["CORS Middleware<br/>(Cross-origin requests)"]
-        
-        subgraph GetRouter["Router: get_endpoints.py"]
-            HealthEndpoint["GET /health"]
-            FrontendEndpoint["GET / (Frontend HTML)"]
-        end
-        
-        subgraph BQRouter["Router: bigquery_endpoints.py"]
-            MetadataEndpoint["GET /GCP-BQ/metadata"]
-            ActiveMetadataEndpoint["GET /GCP-BQ/metadata/active"]
-        end
-        
-        subgraph WebSocketHandler["WebSocket: websocket_endpoints.py"]
-            WSEndpoint["WebSocket /ws/ping"]
-            ConnManager["ConnectionManager"]
-            ReceivePayload["Receive payloads"]
-            ValidateLLA["Validate LLA"]
-            Broadcast["Broadcast to clients"]
-        end
-    end
-    
-    subgraph BigQueryIntegration["BIGQUERY INTEGRATION"]
-        BQConfig["auth/bigquery_config.py"]
-        BQAuth["Authenticate with GCP<br/>Service Account"]
-        BQClient["Create BigQuery Client"]
-        
-        subgraph BQFunctions["BigQuery Functions"]
-            ValidateFunc["validate_sensor_lla()<br/>Query: COUNT(*) WHERE LLA = @lla"]
-            QueryFunc["query_active_metadata()<br/>Query: SELECT * WHERE LLA = @lla<br/>Returns ALL metadata"]
-        end
-    end
-    
-    subgraph GCPBigQuery["GOOGLE CLOUD BIGQUERY"]
-        Project["Project: iucc-f4d"]
-        Dataset["Dataset: {hostname}<br/>(e.g., 'f4d_test')"]
-        Table["Table: {mac_address}_metadata<br/>(e.g., 'aaaaaaaaaaaa_metadata')"]
-        
-        Schema["Schema:<br/>Owner, Mac_Address, Exp_ID, Exp_Name<br/>LLA, Label, Location, Frequency<br/>Coordinates_X/Y/Z, Active_Exp<br/>Exp_Started_At, Exp_Ended_At<br/>... (other fields)"]
-    end
-    
-    %% Client to Server connections
-    WSClient -->|WebSocket| WSEndpoint
-    HTTPClient -->|HTTP GET| GetRouter
-    HTTPClient -->|HTTP GET| BQRouter
-    
-    %% Server internal connections
-    CORSMiddleware --> GetRouter
-    CORSMiddleware --> BQRouter
-    CORSMiddleware --> WebSocketHandler
-    
-    WSEndpoint --> ConnManager
-    ConnManager --> ReceivePayload
-    ReceivePayload --> ValidateLLA
-    ValidateLLA --> Broadcast
-    
-    %% Server to BigQuery Integration
-    ValidateLLA --> BQFunctions
-    ActiveMetadataEndpoint --> BQFunctions
-    MetadataEndpoint --> BQFunctions
-    
-    BQFunctions --> BQConfig
-    BQConfig --> BQAuth
-    BQAuth --> BQClient
-    
-    %% BigQuery Integration to GCP
-    BQClient --> Project
-    Project --> Dataset
-    Dataset --> Table
-    Table --> Schema
-    
-    %% Styling
-    classDef clientLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    classDef serverLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef integrationLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef gcpLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    
-    class WSClient,HTTPClient clientLayer
-    class CORSMiddleware,GetRouter,BQRouter,WebSocketHandler,WSEndpoint,ConnManager,ReceivePayload,ValidateLLA,Broadcast,HealthEndpoint,FrontendEndpoint,MetadataEndpoint,ActiveMetadataEndpoint serverLayer
-    class BQConfig,BQAuth,BQClient,BQFunctions,ValidateFunc,QueryFunc integrationLayer
-    class Project,Dataset,Table,Schema gcpLayer
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT LAYER                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌──────────────┐         ┌──────────────┐                      │
+│  │  WebSocket   │         │   HTTP GET   │                      │
+│  │   Client     │         │   Requests   │                      │
+│  └──────┬───────┘         └──────┬───────┘                      │
+│         │                        │                               │
+└─────────┼────────────────────────┼───────────────────────────────┘
+          │                        │
+          │                        │
+┌─────────▼────────────────────────▼───────────────────────────────┐
+│                    FASTAPI SERVER (Port 8000)                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  CORS Middleware (Allows cross-origin requests)          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Router: get_endpoints.py                                │  │
+│  │  ├── GET /health                                          │  │
+│  │  └── GET /  (Frontend HTML)                               │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Router: bigquery_endpoints.py                           │  │
+│  │  ├── GET /GCP-BQ/metadata                                │  │
+│  │  └── GET /GCP-BQ/metadata/active                         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  WebSocket: websocket_endpoints.py                       │  │
+│  │  └── WebSocket /ws/ping                                  │  │
+│  │      ├── ConnectionManager                               │  │
+│  │      ├── Receive payloads                                │  │
+│  │      ├── Validate LLA (via bigquery_endpoints)          │  │
+│  │      └── Broadcast to all clients                        │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                   │
+└─────────┬─────────────────────────────────────────────────────────┘
+          │
+          │
+┌─────────▼─────────────────────────────────────────────────────────┐
+│                    BIGQUERY INTEGRATION                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  auth/bigquery_config.py                                │  │
+│  │  ├── Load credentials from auth/.env                     │  │
+│  │  ├── Create BigQuery client                              │  │
+│  │  └── Authenticate with GCP Service Account               │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  BigQuery Functions:                                     │  │
+│  │  ├── validate_sensor_lla()                              │  │
+│  │  │   └── Query: {PROJECT}.{hostname}.{mac}_metadata    │  │
+│  │  │       WHERE LLA = @lla                                │  │
+│  │  │                                                       │  │
+│  │  └── query_active_metadata()                            │  │
+│  │      └── Query: {PROJECT}.{hostname}.{mac}_metadata    │  │
+│  │          WHERE LLA = @lla (optional)                     │  │
+│  │          Returns ALL metadata (frontend filters)          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                   │
+└─────────┬─────────────────────────────────────────────────────────┘
+          │
+          │
+┌─────────▼─────────────────────────────────────────────────────────┐
+│              GOOGLE CLOUD BIGQUERY                                │
+│                                                                   │
+│  Project: iucc-f4d                                                │
+│  Dataset: {hostname} (e.g., "f4d_test")                          │
+│  Table: {mac_address}_metadata (e.g., "aaaaaaaaaaaa_metadata")   │
+│                                                                   │
+│  Schema:                                                          │
+│  ├── Owner, Mac_Address, Exp_ID, Exp_Name                       │
+│  ├── LLA, Label, Location, Frequency                            │
+│  ├── Coordinates_X, Coordinates_Y, Coordinates_Z                │
+│  ├── Active_Exp (boolean)                                       │
+│  ├── Exp_Started_At, Exp_Ended_At                              │
+│  └── ... (other metadata fields)                                │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ## Data Flow Diagrams
