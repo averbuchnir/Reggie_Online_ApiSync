@@ -525,6 +525,211 @@ Example log output:
 2025-01-15 10:30:46 | INFO     | src.api.websocket_endpoints | [WEBSOCKET_PING] Validation completed | Result: VALID | Message: LLA found in metadata | Duration: 0.235s
 ```
 
+## System Architecture
+
+### System Architecture Scheme
+
+```mermaid
+graph TB
+    subgraph ClientLayer["CLIENT LAYER"]
+        WSClient["WebSocket Client<br/>(Frontend)"]
+        HTTPClient["HTTP GET Requests<br/>(Frontend)"]
+    end
+    
+    subgraph FastAPIServer["FASTAPI SERVER (Port 8000)"]
+        CORSMiddleware["CORS Middleware<br/>(Cross-origin requests)"]
+        
+        subgraph GetRouter["Router: get_endpoints.py"]
+            HealthEndpoint["GET /health"]
+            FrontendEndpoint["GET / (Frontend HTML)"]
+        end
+        
+        subgraph BQRouter["Router: bigquery_endpoints.py"]
+            MetadataEndpoint["GET /GCP-BQ/metadata"]
+            ActiveMetadataEndpoint["GET /GCP-BQ/metadata/active"]
+        end
+        
+        subgraph WebSocketHandler["WebSocket: websocket_endpoints.py"]
+            WSEndpoint["WebSocket /ws/ping"]
+            ConnManager["ConnectionManager"]
+            ReceivePayload["Receive payloads"]
+            ValidateLLA["Validate LLA"]
+            Broadcast["Broadcast to clients"]
+        end
+    end
+    
+    subgraph BigQueryIntegration["BIGQUERY INTEGRATION"]
+        BQConfig["auth/bigquery_config.py"]
+        BQAuth["Authenticate with GCP<br/>Service Account"]
+        BQClient["Create BigQuery Client"]
+        
+        subgraph BQFunctions["BigQuery Functions"]
+            ValidateFunc["validate_sensor_lla()<br/>Query: COUNT(*) WHERE LLA = @lla"]
+            QueryFunc["query_active_metadata()<br/>Query: SELECT * WHERE LLA = @lla<br/>Returns ALL metadata"]
+        end
+    end
+    
+    subgraph GCPBigQuery["GOOGLE CLOUD BIGQUERY"]
+        Project["Project: iucc-f4d"]
+        Dataset["Dataset: {hostname}<br/>(e.g., 'f4d_test')"]
+        Table["Table: {mac_address}_metadata<br/>(e.g., 'aaaaaaaaaaaa_metadata')"]
+        
+        Schema["Schema:<br/>Owner, Mac_Address, Exp_ID, Exp_Name<br/>LLA, Label, Location, Frequency<br/>Coordinates_X/Y/Z, Active_Exp<br/>Exp_Started_At, Exp_Ended_At<br/>... (other fields)"]
+    end
+    
+    %% Client to Server connections
+    WSClient -->|WebSocket| WSEndpoint
+    HTTPClient -->|HTTP GET| GetRouter
+    HTTPClient -->|HTTP GET| BQRouter
+    
+    %% Server internal connections
+    CORSMiddleware --> GetRouter
+    CORSMiddleware --> BQRouter
+    CORSMiddleware --> WebSocketHandler
+    
+    WSEndpoint --> ConnManager
+    ConnManager --> ReceivePayload
+    ReceivePayload --> ValidateLLA
+    ValidateLLA --> Broadcast
+    
+    %% Server to BigQuery Integration
+    ValidateLLA --> BQFunctions
+    ActiveMetadataEndpoint --> BQFunctions
+    MetadataEndpoint --> BQFunctions
+    
+    BQFunctions --> BQConfig
+    BQConfig --> BQAuth
+    BQAuth --> BQClient
+    
+    %% BigQuery Integration to GCP
+    BQClient --> Project
+    Project --> Dataset
+    Dataset --> Table
+    Table --> Schema
+    
+    %% Styling
+    classDef clientLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef serverLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef integrationLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef gcpLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    class WSClient,HTTPClient clientLayer
+    class CORSMiddleware,GetRouter,BQRouter,WebSocketHandler,WSEndpoint,ConnManager,ReceivePayload,ValidateLLA,Broadcast,HealthEndpoint,FrontendEndpoint,MetadataEndpoint,ActiveMetadataEndpoint serverLayer
+    class BQConfig,BQAuth,BQClient,BQFunctions,ValidateFunc,QueryFunc integrationLayer
+    class Project,Dataset,Table,Schema gcpLayer
+```
+
+## Data Flow Diagrams
+
+### a) WebSocket Ping Flow
+
+```
+Sensor Device
+    │
+    │ Sends: {hostname, mac_address, type, LLA}
+    ▼
+WebSocket /ws/ping
+    │
+    ├─► Validate LLA (BigQuery)
+    │   │
+    │   └─► Query: COUNT(*) WHERE LLA = @lla
+    │       │
+    │       └─► Return: is_valid (true/false)
+    │
+    ├─► Create Response with validation
+    │
+    └─► Broadcast to ALL connected clients
+        │
+        └─► Frontend receives & displays
+```
+
+**Steps:**
+1. Sensor sends ping payload via WebSocket
+2. Backend receives payload and extracts LLA
+3. Backend queries BigQuery to validate LLA exists
+4. Backend creates response with validation result
+5. Backend broadcasts response to all connected clients
+6. Frontend receives broadcast and displays payload card
+
+### b) Metadata Query Flow
+
+```
+Frontend (User clicks payload card)
+    │
+    │ GET /GCP-BQ/metadata/active?hostname=X&mac=Y&lla=Z
+    ▼
+Backend Endpoint
+    │
+    ├─► Query BigQuery: SELECT * WHERE LLA = @lla
+    │   │
+    │   └─► Returns ALL metadata (active + inactive)
+    │
+    └─► Return JSON response
+        │
+        ▼
+Frontend Processing
+    │
+    ├─► Filter: Active_Exp = True  → Show active experiments
+    │   └─► Green theme, direct display
+    │
+    └─► Filter: Active_Exp = False → Show inactive experiments
+        └─► Gray theme, dropdown selector
+```
+
+**Steps:**
+1. User clicks on a payload card in the frontend
+2. Frontend sends HTTP GET request to `/GCP-BQ/metadata/active`
+3. Backend queries BigQuery for all metadata matching the LLA
+4. Backend returns all metadata (both active and inactive)
+5. Frontend filters results:
+   - If `Active_Exp = True` entries exist → Display active experiments (green theme)
+   - If only `Active_Exp = False` entries exist → Display inactive experiments (gray theme, dropdown)
+6. Frontend updates payload card visual status (green/gray badge)
+7. Frontend displays metadata in modal
+
+### c) Frontend Display Logic
+
+```
+WebSocket Payload Received
+    │
+    ├─► Check validation.is_valid
+    │   │
+    │   ├─► TRUE  → Display in "Received Payloads"
+    │   │   │       └─► Green validation section
+    │   │   │           └─► Clickable → Fetch metadata
+    │   │   │
+    │   └─► FALSE → Check message
+    │       │
+    │       ├─► "LLA not found" → Display in "Received Payloads"
+    │       │                    └─► Red validation section
+    │       │
+    │       └─► Other error → Display in "Error/Debug"
+    │
+    └─► Check for duplicates (by LLA)
+        │
+        ├─► New LLA → Create new card
+        │
+        └─► Existing LLA → Update timestamp, trigger blink
+```
+
+**Steps:**
+1. Frontend receives WebSocket payload with validation result
+2. Check if `validation.is_valid === true`:
+   - **TRUE**: Display in "Received Payloads" section with green validation
+   - **FALSE**: Check validation message:
+     - If message contains "LLA not found" → Display in "Received Payloads" with red validation
+     - Otherwise → Display in "Error/Debug" section
+3. Check if LLA already exists in displayed payloads:
+   - **New LLA**: Create new payload card
+   - **Existing LLA**: Update timestamp and trigger blink animation (if valid)
+4. If payload count exceeds 10, remove oldest payloads
+5. When user clicks card, fetch and display metadata
+
+**Visual Status Update:**
+- After metadata is fetched, payload card updates:
+  - If active experiments found → Green card with "✅ Active" badge
+  - If only inactive experiments found → Gray card with "📜 History" badge
+
 ## Notes
 
 - WebSocket payloads are broadcast to all connected clients simultaneously
