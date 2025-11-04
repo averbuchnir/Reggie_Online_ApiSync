@@ -1056,9 +1056,21 @@
                 payloadItem.classList.add('valid');
             }
             
-            // Determine experiment status badge
-            let expBadgeHtml = '';
-    
+            // Determine experiment status (no badge, just styling)
+            if (!isValid) {
+                payloadExpStatusMap.set(LLA, 'unknown');
+            } else {
+                // Check if we already know the status
+                const expStatus = payloadExpStatusMap.get(LLA);
+                if (expStatus === 'active') {
+                    payloadItem.classList.add('active-exp');
+                } else if (expStatus === 'inactive') {
+                    payloadItem.classList.add('inactive-exp');
+                } else {
+                    // Unknown status - will be checked when metadata is fetched
+                    payloadExpStatusMap.set(LLA, 'unknown');
+                }
+            }
             
             // Build validation status HTML
             let validationHtml = '';
@@ -1078,7 +1090,6 @@
             }
             
             payloadItem.innerHTML = `
-                ${expBadgeHtml}
                 <div class="payload-header">
                     <strong>Payload #${++payloadCount}</strong>
                     <span class="timestamp">${data.timestamp || 'N/A'}</span>
@@ -1531,16 +1542,15 @@
             // Remove existing status classes
             payloadItem.classList.remove('active-exp', 'inactive-exp');
             
-            // Remove existing badge
-            const existingBadge = payloadItem.querySelector('.payload-exp-badge');
-            if (existingBadge) {
-                existingBadge.remove();
-            }
-            
             // Update status in map
             payloadExpStatusMap.set(lla, hasActiveExp ? 'active' : 'inactive');
             
-
+            // Add appropriate class (no badge)
+            if (hasActiveExp) {
+                payloadItem.classList.add('active-exp');
+            } else {
+                payloadItem.classList.add('inactive-exp');
+            }
         }
     </script>
 </body>
