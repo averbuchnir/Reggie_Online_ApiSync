@@ -16,7 +16,7 @@ A FastAPI application with WebSocket support for real-time payload monitoring. I
 - **Connection Management**: Manages multiple WebSocket connections with broadcasting
 - **Structured Logging**: Comprehensive logging with timestamps, operation tracking, and performance metrics
 - **Duplicate Prevention**: Frontend prevents duplicate sensors by LLA with visual feedback
-- **Visual Status Indicators**: Color-coded cards and badges to distinguish active vs inactive experiments
+- **Visual Status Indicators**: Color-coded cards to distinguish active vs inactive experiments
 - **Metadata Modal**: Clickable payload cards to view detailed sensor metadata with experiment history
 
 ## Project Structure
@@ -317,10 +317,8 @@ The frontend dashboard (`http://localhost:8000/`) provides:
 
 5. **Visual Status Indicators**: Color-coded payload cards
    - **Active Experiments**: Green gradient background, green left border, green shadow
-     - "✅ Active" badge in top-right corner
      - Automatically updates when metadata is fetched
    - **Inactive Experiments**: Gray gradient background, gray left border, gray shadow
-     - "📜 History" badge in top-right corner
      - Status determined when clicking to view metadata
    - **Invalid Sensors**: Red validation section (failed validation)
 
@@ -363,10 +361,10 @@ The frontend dashboard (`http://localhost:8000/`) provides:
   - Displays formatted dates and structured information
   - Visual separation between active (green) and inactive (gray) experiments
 - **Visual Status Indicators**:
-  - Payload cards automatically update with status badges after metadata fetch
+  - Payload cards automatically update with visual styling after metadata fetch
   - Green theme for sensors with active experiments
   - Gray theme for sensors with only inactive/historical experiments
-  - Status badges appear in top-right corner of each card
+  - Visual distinction through background colors, borders, and shadows
   - Hover effects match the card's status theme
 - **Editable Metadata (Planned)**:
   - Inactive experiment metadata will be editable (all fields except Frequency, LLA, RFID)
@@ -680,7 +678,7 @@ Frontend Processing
 5. Frontend filters results:
    - If `Active_Exp = True` entries exist → Display active experiments (green theme)
    - If only `Active_Exp = False` entries exist → Display inactive experiments (gray theme, dropdown)
-6. Frontend updates payload card visual status (green/gray badge)
+6. Frontend updates payload card visual status (green/gray styling)
 7. Frontend displays metadata in modal
 
 ### c) Frontend Display Logic
@@ -723,8 +721,8 @@ WebSocket Payload Received
 
 **Visual Status Update:**
 - After metadata is fetched, payload card updates:
-  - If active experiments found → Green card with "✅ Active" badge
-  - If only inactive experiments found → Gray card with "📜 History" badge
+  - If active experiments found → Green card (green gradient background, green border, green shadow)
+  - If only inactive experiments found → Gray card (gray gradient background, gray border, gray shadow)
 
 ## Notes
 
