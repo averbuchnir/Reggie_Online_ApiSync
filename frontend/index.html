@@ -70,6 +70,68 @@
             border-radius: 5px;
             animation: slideIn 0.3s ease-out;
             min-width: 0; /* Allow items to shrink below their content size */
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        
+        .payload-item.active-exp {
+            background: linear-gradient(135deg, #f0fdf4 0%, #f8f9fa 100%);
+            border-left: 4px solid #10b981;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+        }
+        
+        .payload-item.inactive-exp {
+            background: linear-gradient(135deg, #f9fafb 0%, #f8f9fa 100%);
+            border-left: 4px solid #9ca3af;
+            box-shadow: 0 2px 8px rgba(107, 114, 128, 0.2);
+        }
+        
+        .payload-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .payload-item.active-exp:hover {
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .payload-item.inactive-exp:hover {
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+        
+        .payload-item:active {
+            transform: translateY(0);
+        }
+        
+        .payload-exp-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .payload-exp-badge.active {
+            background: #10b981;
+            color: white;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+        
+        .payload-exp-badge.inactive {
+            background: #6b7280;
+            color: white;
+            box-shadow: 0 2px 4px rgba(107, 114, 128, 0.3);
+        }
+        
+        .payload-exp-badge.invalid {
+            background: #ef4444;
+            color: white;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
         }
         
         @keyframes slideIn {
@@ -183,6 +245,308 @@
             background: #9ca3af;
             cursor: not-allowed;
         }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease-out;
+            position: relative;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 2em;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .metadata-section {
+            margin-bottom: 25px;
+        }
+        
+        .metadata-section-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .metadata-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .metadata-item-label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .metadata-item-value {
+            font-size: 1em;
+            color: #111827;
+            word-break: break-word;
+        }
+        
+        .metadata-empty {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+            font-size: 1.1em;
+        }
+        
+        .metadata-loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+        
+        .metadata-error {
+            text-align: center;
+            padding: 40px;
+            color: #ef4444;
+            font-size: 1.1em;
+        }
+        
+        .experiment-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .active-exp-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .inactive-exp-badge {
+            display: inline-block;
+            background: #9ca3af;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        /* Active/Inactive Visual Separation */
+        .modal-header.active-state {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-left: 5px solid #10b981;
+            padding: 20px 30px;
+            margin: -30px -30px 20px -30px;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .modal-header.inactive-state {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-left: 5px solid #9ca3af;
+            padding: 20px 30px;
+            margin: -30px -30px 20px -30px;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .status-banner {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .status-banner.active {
+            background: #10b981;
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        .status-banner.inactive {
+            background: #6b7280;
+            color: white;
+            box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+        }
+        
+        .metadata-section.active-section {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #10b981;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+        }
+        
+        .metadata-section.inactive-section {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border: 2px solid #9ca3af;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.1);
+        }
+        
+        .metadata-section-title.active-title {
+            color: #10b981;
+            border-bottom: 2px solid #10b981;
+            font-weight: 700;
+        }
+        
+        .metadata-section-title.inactive-title {
+            color: #6b7280;
+            border-bottom: 2px solid #9ca3af;
+            font-weight: 700;
+        }
+        
+        .metadata-item.active-item {
+            background: white;
+            border-left: 4px solid #10b981;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+        }
+        
+        .metadata-item.inactive-item {
+            background: white;
+            border-left: 4px solid #9ca3af;
+            box-shadow: 0 2px 4px rgba(107, 114, 128, 0.1);
+        }
+        
+        .experiment-select-wrapper {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border: 2px solid #9ca3af;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .experiment-select-wrapper .metadata-section-title {
+            color: #6b7280;
+            border-bottom: 2px solid #9ca3af;
+        }
+        
+        #experimentSelect {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            border: 2px solid #9ca3af;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        #experimentSelect:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+        
+        #experimentSelect:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .status-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -260,11 +624,26 @@
         </div>
     </div>
     
+    <!-- Metadata Modal -->
+    <div id="metadataModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Sensor Metadata</h2>
+                <button class="modal-close" onclick="closeMetadataModal()">&times;</button>
+            </div>
+            <div id="modalBody">
+                <div class="metadata-loading">Loading metadata...</div>
+            </div>
+        </div>
+    </div>
+    
     <script>
         let ws = null;
         let payloadCount = 0;
         let displayedLLAs = new Map(); // Track displayed LLAs: LLA -> element
         let errorList = []; // Track validation errors
+        let payloadDataMap = new Map(); // Track payload data: LLA -> {hostname, mac_address, LLA}
+        let payloadExpStatusMap = new Map(); // Track experiment status: LLA -> 'active' | 'inactive' | 'unknown'
         
         function updateBlinkColor(color) {
             // Update CSS variable
@@ -640,6 +1019,13 @@
                 // LLA already exists - don't add duplicate
                 console.log(`[FRONTEND] LLA ${LLA} already displayed, skipping duplicate`);
                 
+                // Update payload data
+                payloadDataMap.set(LLA, {
+                    hostname: data.payload.hostname,
+                    mac_address: data.payload.mac_address,
+                    LLA: LLA
+                });
+                
                 // If valid and existing, trigger blink
                 if (isValid) {
                     console.log(`[FRONTEND] Existing LLA ${LLA} is valid, triggering blink`);
@@ -651,6 +1037,11 @@
                         timestampEl.textContent = data.timestamp || 'N/A';
                     }
                 }
+                
+                // Ensure click handler is attached
+                existingItem.onclick = () => {
+                    fetchMetadataForLLA(data.payload.hostname, data.payload.mac_address, LLA);
+                };
                 
                 return; // Don't add duplicate
             }
@@ -664,6 +1055,10 @@
             if (isValid) {
                 payloadItem.classList.add('valid');
             }
+            
+            // Determine experiment status badge
+            let expBadgeHtml = '';
+    
             
             // Build validation status HTML
             let validationHtml = '';
@@ -683,6 +1078,7 @@
             }
             
             payloadItem.innerHTML = `
+                ${expBadgeHtml}
                 <div class="payload-header">
                     <strong>Payload #${++payloadCount}</strong>
                     <span class="timestamp">${data.timestamp || 'N/A'}</span>
@@ -707,6 +1103,18 @@
                     ${validationHtml}
                 </div>
             `;
+            
+            // Store payload data for metadata fetching
+            payloadDataMap.set(LLA, {
+                hostname: data.payload.hostname,
+                mac_address: data.payload.mac_address,
+                LLA: LLA
+            });
+            
+            // Add click handler to fetch metadata
+            payloadItem.addEventListener('click', () => {
+                fetchMetadataForLLA(data.payload.hostname, data.payload.mac_address, LLA);
+            });
             
             // Track this LLA
             displayedLLAs.set(LLA, payloadItem);
@@ -758,6 +1166,382 @@
         window.addEventListener('beforeunload', () => {
             disconnectWebSocket();
         });
+        
+        // Metadata Modal Functions
+        async function fetchMetadataForLLA(hostname, mac_address, lla) {
+            if (!hostname || !mac_address || !lla) {
+                console.error('[METADATA] Missing required parameters:', {hostname, mac_address, lla});
+                openMetadataModal(lla, null, 'Missing required parameters');
+                return;
+            }
+            
+            // Open modal with loading state
+            openMetadataModal(lla, null, 'loading');
+            
+            try {
+                const url = `/GCP-BQ/metadata/active?hostname=${encodeURIComponent(hostname)}&mac_address=${encodeURIComponent(mac_address)}&lla=${encodeURIComponent(lla)}`;
+                console.log('[METADATA] Fetching metadata from:', url);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // LLA not found
+                        openMetadataModal(lla, null, 'not_found');
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    // Filter for Active_Exp = True (current state)
+                    const activeMetadata = data.data.filter(item => item.Active_Exp === true);
+                    
+                    // Update payload card visual status
+                    updatePayloadCardStatus(lla, activeMetadata.length > 0);
+                    
+                    if (activeMetadata.length > 0) {
+                        // Show active experiments
+                        openMetadataModal(lla, activeMetadata, 'active');
+                    } else {
+                        // No active experiments - show history (inactive experiments)
+                        const inactiveMetadata = data.data.filter(item => item.Active_Exp === false);
+                        if (inactiveMetadata.length > 0) {
+                            openMetadataModal(lla, inactiveMetadata, 'inactive');
+                        } else {
+                            // Has metadata but no active or inactive experiments (shouldn't happen)
+                            openMetadataModal(lla, data.data, 'no_active');
+                        }
+                    }
+                } else {
+                    // No metadata found
+                    updatePayloadCardStatus(lla, false);
+                    openMetadataModal(lla, null, 'not_found');
+                }
+            } catch (error) {
+                console.error('[METADATA] Error fetching metadata:', error);
+                openMetadataModal(lla, null, 'error', error.message);
+            }
+        }
+        
+        function openMetadataModal(lla, metadata, state = 'loading', errorMessage = null) {
+            const modal = document.getElementById('metadataModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalHeader = modal.querySelector('.modal-header');
+            
+            // Remove existing state classes
+            modalHeader.classList.remove('active-state', 'inactive-state');
+            
+            // Set title
+            modalTitle.textContent = `Sensor Metadata - ${lla || 'Unknown'}`;
+            
+            // Show modal
+            modal.classList.add('active');
+            
+            // Display based on state
+            if (state === 'loading') {
+                modalBody.innerHTML = '<div class="metadata-loading">Loading metadata...</div>';
+            } else if (state === 'not_found') {
+                modalBody.innerHTML = '<div class="metadata-empty">No metadata yet</div>';
+            } else if (state === 'error') {
+                modalBody.innerHTML = `<div class="metadata-error">Error: ${errorMessage || 'Failed to fetch metadata'}</div>`;
+            } else if (typeof state === 'string' && state.includes('Missing')) {
+                modalBody.innerHTML = `<div class="metadata-error">${state}</div>`;
+            } else if (state === 'no_active') {
+                // Has metadata but no active experiments
+                modalHeader.classList.add('inactive-state');
+                displayMetadataInModal(metadata, false);
+            } else if (state === 'active') {
+                // Has active metadata - show current state
+                modalHeader.classList.add('active-state');
+                displayMetadataInModal(metadata, true, true);
+            } else if (state === 'inactive') {
+                // Has inactive metadata - show history with dropdown
+                modalHeader.classList.add('inactive-state');
+                displayMetadataInModal(metadata, false, false);
+            }
+        }
+        
+        function closeMetadataModal() {
+            const modal = document.getElementById('metadataModal');
+            modal.classList.remove('active');
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', (event) => {
+            const modal = document.getElementById('metadataModal');
+            if (event.target === modal) {
+                closeMetadataModal();
+            }
+        });
+        
+        // Close modal with ESC key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeMetadataModal();
+            }
+        });
+        
+        function displayMetadataInModal(metadata, hasActiveExp, isActive = true) {
+            const modalBody = document.getElementById('modalBody');
+            
+            if (!metadata || metadata.length === 0) {
+                modalBody.innerHTML = '<div class="metadata-empty">No metadata available</div>';
+                return;
+            }
+            
+            if (isActive) {
+                // Display active experiments directly (current state)
+                displayActiveExperiments(metadata, modalBody);
+            } else {
+                // Display inactive experiments with dropdown (history)
+                displayInactiveExperiments(metadata, modalBody);
+            }
+        }
+        
+        function displayActiveExperiments(metadata, modalBody) {
+            // Group by experiment
+            const experiments = {};
+            metadata.forEach(item => {
+                const expKey = `${item.Exp_ID}_${item.Exp_Name}`;
+                if (!experiments[expKey]) {
+                    experiments[expKey] = [];
+                }
+                experiments[expKey].push(item);
+            });
+            
+            let html = `
+                <div class="status-banner active">
+                    <span class="status-icon">✅</span>
+                    CURRENT STATE
+                </div>
+            `;
+            
+            // Display each experiment
+            Object.keys(experiments).forEach(expKey => {
+                const items = experiments[expKey];
+                const firstItem = items[0];
+                
+                html += renderExperimentSection(firstItem, items, true);
+            });
+            
+            modalBody.innerHTML = html;
+        }
+        
+        function displayInactiveExperiments(metadata, modalBody) {
+            // Group by experiment
+            const experiments = {};
+            metadata.forEach(item => {
+                const expKey = `${item.Exp_ID}_${item.Exp_Name}`;
+                if (!experiments[expKey]) {
+                    experiments[expKey] = [];
+                }
+                experiments[expKey].push(item);
+            });
+            
+            // Sort experiments by Exp_ID_Exp_Name
+            const sortedExpKeys = Object.keys(experiments).sort((a, b) => {
+                // Extract Exp_ID for sorting
+                const aId = parseInt(a.split('_')[0]);
+                const bId = parseInt(b.split('_')[0]);
+                if (aId !== bId) {
+                    return aId - bId;
+                }
+                // If same ID, sort by name
+                return a.localeCompare(b);
+            });
+            
+            // Create dropdown with sorted experiments
+            let dropdownHtml = `
+                <div class="status-banner inactive">
+                    <span class="status-icon">📜</span>
+                    HISTORY
+                </div>
+                <div class="experiment-select-wrapper">
+                    <div class="metadata-section-title">Select Experiment</div>
+                    <select id="experimentSelect">
+                        <option value="">-- Select an experiment --</option>
+            `;
+            
+            sortedExpKeys.forEach(expKey => {
+                const firstItem = experiments[expKey][0];
+                const displayName = `${firstItem.Exp_ID}_${firstItem.Exp_Name}`;
+                dropdownHtml += `<option value="${expKey}">${displayName}</option>`;
+            });
+            
+            dropdownHtml += `
+                    </select>
+                </div>
+                <div id="selectedExperimentContent"></div>
+            `;
+            
+            modalBody.innerHTML = dropdownHtml;
+            
+            // Store experiments data in a way accessible to event listener
+            // Use a data attribute or closure to store experiments
+            const experimentData = JSON.stringify(experiments);
+            modalBody.setAttribute('data-experiments', experimentData);
+            
+            // Add event listener to dropdown
+            const selectElement = document.getElementById('experimentSelect');
+            selectElement.addEventListener('change', (e) => {
+                const selectedExpKey = e.target.value;
+                const selectedExperimentContent = document.getElementById('selectedExperimentContent');
+                
+                // Retrieve experiments from data attribute
+                const storedExperiments = JSON.parse(modalBody.getAttribute('data-experiments') || '{}');
+                
+                if (selectedExpKey && storedExperiments[selectedExpKey]) {
+                    const items = storedExperiments[selectedExpKey];
+                    const firstItem = items[0];
+                    selectedExperimentContent.innerHTML = renderExperimentSection(firstItem, items, false);
+                } else {
+                    selectedExperimentContent.innerHTML = '';
+                }
+            });
+            
+            // Auto-select first experiment if available
+            if (sortedExpKeys.length > 0) {
+                selectElement.value = sortedExpKeys[0];
+                selectElement.dispatchEvent(new Event('change'));
+            }
+        }
+        
+        function renderExperimentSection(firstItem, items, isActive) {
+            const sectionClass = isActive ? 'active-section' : 'inactive-section';
+            const titleClass = isActive ? 'active-title' : 'inactive-title';
+            const itemClass = isActive ? 'active-item' : 'inactive-item';
+            
+            let html = `
+                <div class="metadata-section ${sectionClass}">
+                    <div class="metadata-section-title ${titleClass}">
+                        <span class="experiment-badge">${firstItem.Exp_ID}_${firstItem.Exp_Name}</span>
+                        ${isActive ? '<span class="active-exp-badge">Active</span>' : '<span class="inactive-exp-badge">Inactive</span>'}
+                    </div>
+                    <div class="metadata-grid">
+                        <div class="metadata-item ${itemClass}">
+                            <div class="metadata-item-label">Experiment ID</div>
+                            <div class="metadata-item-value">${firstItem.Exp_ID || 'N/A'}</div>
+                        </div>
+                        <div class="metadata-item ${itemClass}">
+                            <div class="metadata-item-label">Experiment Name</div>
+                            <div class="metadata-item-value">${firstItem.Exp_Name || 'N/A'}</div>
+                        </div>
+                        <div class="metadata-item ${itemClass}">
+                            <div class="metadata-item-label">Experiment Location</div>
+                            <div class="metadata-item-value">${firstItem.Exp_Location || 'N/A'}</div>
+                        </div>
+                        <div class="metadata-item ${itemClass}">
+                            <div class="metadata-item-label">Experiment Started</div>
+                            <div class="metadata-item-value">${formatDate(firstItem.Exp_Started_At) || 'N/A'}</div>
+                        </div>
+                        <div class="metadata-item ${itemClass}">
+                            <div class="metadata-item-label">Experiment Ended</div>
+                            <div class="metadata-item-value">${formatDate(firstItem.Exp_Ended_At) || 'N/A'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Display sensor details for each LLA in this experiment
+            items.forEach(item => {
+                html += `
+                    <div class="metadata-section ${sectionClass}">
+                        <div class="metadata-section-title ${titleClass}">Sensor Details - ${item.LLA || 'N/A'}</div>
+                        <div class="metadata-grid">
+                            <div class="metadata-item ${itemClass}">
+                                <div class="metadata-item-label">LLA</div>
+                                <div class="metadata-item-value">${item.LLA || 'N/A'}</div>
+                            </div>
+                            <div class="metadata-item ${itemClass}">
+                                <div class="metadata-item-label">Label</div>
+                                <div class="metadata-item-value">${item.Label || 'N/A'}</div>
+                            </div>
+                            <div class="metadata-item ${itemClass}">
+                                <div class="metadata-item-label">Location</div>
+                                <div class="metadata-item-value">${item.Location || 'N/A'}</div>
+                            </div>
+                            <div class="metadata-item ${itemClass}">
+                                <div class="metadata-item-label">Frequency</div>
+                                <div class="metadata-item-value">${item.Frequency || 'N/A'}</div>
+                            </div>
+                            <div class="metadata-item ${itemClass}">
+                                <div class="metadata-item-label">Coordinates</div>
+                                <div class="metadata-item-value">X: ${item.Coordinates_X ?? 'N/A'}, Y: ${item.Coordinates_Y ?? 'N/A'}, Z: ${item.Coordinates_Z ?? 'N/A'}</div>
+                            </div>
+                            <div class="metadata-item ${itemClass}">
+                                <div class="metadata-item-label">RFID</div>
+                                <div class="metadata-item-value">${item.RFID || 'N/A'}</div>
+                            </div>
+                            <div class="metadata-item ${itemClass}">
+                                <div class="metadata-item-label">Status</div>
+                                <div class="metadata-item-value">
+                                    ${item.isActive ? '<span style="color: #10b981;">Active</span>' : '<span style="color: #ef4444;">Inactive</span>'}
+                                    ${item.isValid ? ' | <span style="color: #10b981;">Valid</span>' : ' | <span style="color: #ef4444;">Invalid</span>'}
+                                </div>
+                            </div>
+                            <div class="metadata-item ${itemClass}">
+                                <div class="metadata-item-label">Last Seen</div>
+                                <div class="metadata-item-value">${formatDate(item.LastSeen) || 'N/A'}</div>
+                            </div>
+                            ${item.LabelOptions && item.LabelOptions.length > 0 ? `
+                                <div class="metadata-item ${itemClass}">
+                                    <div class="metadata-item-label">Label Options</div>
+                                    <div class="metadata-item-value">${item.LabelOptions.join(', ')}</div>
+                                </div>
+                            ` : ''}
+                            ${item.Alerts ? `
+                                <div class="metadata-item ${itemClass}">
+                                    <div class="metadata-item-label">Alerts</div>
+                                    <div class="metadata-item-value" style="color: #ef4444;">${item.Alerts}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return null;
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+        
+        function updatePayloadCardStatus(lla, hasActiveExp) {
+            const payloadItem = findPayloadByLLA(lla);
+            if (!payloadItem) return;
+            
+            // Remove existing status classes
+            payloadItem.classList.remove('active-exp', 'inactive-exp');
+            
+            // Remove existing badge
+            const existingBadge = payloadItem.querySelector('.payload-exp-badge');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+            
+            // Update status in map
+            payloadExpStatusMap.set(lla, hasActiveExp ? 'active' : 'inactive');
+            
+
+        }
     </script>
 </body>
 </html>

@@ -1,9 +1,9 @@
 # ApiSync
 
 **Author:** Nir Averbuch  
-**Last updated:** 2025-11-03
+**Last updated:** 2025-11-04
 
-A FastAPI application with WebSocket support for real-time payload monitoring. Includes a web-based frontend dashboard to visualize received payloads.
+A FastAPI application with WebSocket support for real-time payload monitoring. Includes a web-based frontend dashboard to visualize received payloads with metadata management capabilities.
 
 ## Features
 
@@ -11,10 +11,13 @@ A FastAPI application with WebSocket support for real-time payload monitoring. I
 - **WebSocket Support**: Real-time bidirectional communication with payload broadcasting
 - **BigQuery Integration**: Query Google Cloud BigQuery tables with authentication from `.env` file
 - **Sensor Validation**: Automatic LLA validation against BigQuery metadata tables for each ping
+- **Metadata Management**: View and edit sensor metadata with active/inactive experiment separation
 - **Frontend Dashboard**: Interactive web interface to monitor WebSocket payloads with validation status
 - **Connection Management**: Manages multiple WebSocket connections with broadcasting
 - **Structured Logging**: Comprehensive logging with timestamps, operation tracking, and performance metrics
 - **Duplicate Prevention**: Frontend prevents duplicate sensors by LLA with visual feedback
+- **Visual Status Indicators**: Color-coded cards and badges to distinguish active vs inactive experiments
+- **Metadata Modal**: Clickable payload cards to view detailed sensor metadata with experiment history
 
 ## Project Structure
 
@@ -81,6 +84,7 @@ The server will start on `http://localhost:8000`
 - **Health Check**: `http://localhost:8000/health`
 - **WebSocket Endpoint**: `ws://localhost:8000/ws/ping`
 - **BigQuery Metadata**: `http://localhost:8000/GCP-BQ/metadata?dataset=<dataset>&table=<table>`
+- **Active Metadata Query**: `http://localhost:8000/GCP-BQ/metadata/active?hostname=<hostname>&mac_address=<mac>&lla=<lla>`
 
 ## API Endpoints
 
@@ -143,6 +147,53 @@ GET /GCP-BQ/metadata?dataset=f4d_test&table=aaaaaaaaaaaa_metadata&limit=50
 - Dataset and table are specified as query parameters
 - Returns JSON with paginated results
 
+#### `GET /GCP-BQ/metadata/active`
+
+Query metadata table for active or inactive experiments.
+
+**Query Parameters:**
+- `hostname` (required): Owner/hostname (e.g., "f4d_test")
+- `mac_address` (required): MAC address (e.g., "aaaaaaaaaaaa")
+- `lla` (optional): Specific LLA value to filter by sensor
+- `experiment` (optional): Experiment identifier in format "Exp_ID_Exp_Name" (e.g., "1_Image_V2")
+- `all` (optional, default: false): If true, return all metadata for the mac_address
+
+**Example:**
+```
+GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&lla=fd002124b00ccf7399b
+GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&experiment=1_Image_V2
+GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&all=true
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "project": "iucc-f4d",
+  "dataset": "f4d_test",
+  "table": "aaaaaaaaaaaa_metadata",
+  "full_table": "iucc-f4d.f4d_test.aaaaaaaaaaaa_metadata",
+  "count": 7,
+  "data": [
+    {
+      "Owner": "f4d_test",
+      "Mac_Address": "aaaaaaaaaaaa",
+      "Exp_ID": 1,
+      "Exp_Name": "Image_V2",
+      "Active_Exp": true,
+      // ... other metadata fields
+    }
+  ]
+}
+```
+
+**Notes:**
+- Returns all metadata (both active and inactive) - filtering is done in frontend
+- Constructs table name as: `{mac_address}_metadata`
+- Uses `hostname` as the dataset name
+- Supports filtering by LLA, experiment, or all sensors
+- No `Active_Exp` filtering in backend - all data returned for frontend processing
+
 ### WebSocket Endpoints
 
 #### `WebSocket /ws/ping`
@@ -175,6 +226,38 @@ Accepts WebSocket connections and handles ping payloads with automatic sensor va
       "error": null
     }
   }
+}
+```
+
+**Metadata Update (Planned):**
+
+The WebSocket endpoint also supports metadata update messages (planned feature):
+
+**Request Payload:**
+```json
+{
+  "type": "metadata_update",
+  "payload": {
+    "hostname": "<string>",
+    "mac_address": "<string>",
+    "LLA": "<string>",
+    "original_data": {...},
+    "modified_fields": {
+      "Label": "...",
+      "Location": "...",
+      "Coordinates_X": ...,
+      ...
+    }
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "status": "received",
+  "message": "Metadata update received",
+  "timestamp": "2024-01-15T10:30:45"
 }
 ```
 
@@ -212,7 +295,36 @@ The frontend dashboard (`http://localhost:8000/`) provides:
    - Clear Payloads button to reset the display
    - Automatic updates when payloads are received
 
-4. **Error/Debug Dashboard**: Separate section for validation errors
+4. **Metadata Modal**: Clickable payload cards to view detailed sensor metadata
+   - Click any payload card to open a modal with sensor metadata
+   - **Active Experiments**: Shows current state with green theme
+     - Displays all active experiments directly
+     - Green color scheme throughout (header, sections, borders)
+     - "CURRENT STATE" banner with checkmark icon
+   - **Inactive Experiments**: Shows history with gray theme
+     - Dropdown selector to choose from historical experiments
+     - Experiments sorted by `Exp_ID_Exp_Name` format
+     - Gray color scheme throughout (header, sections, borders)
+     - "HISTORY" banner with scroll icon
+     - Auto-selects first experiment when opened
+   - **Metadata Display**: Structured view of experiment and sensor details
+     - Experiment information (ID, Name, Location, dates)
+     - Sensor details (Label, Location, Coordinates, Frequency, etc.)
+     - Status indicators (Active/Inactive, Valid/Invalid)
+     - Last Seen timestamps, Label Options, Alerts
+   - **Empty States**: Handles "No metadata yet" and "No active experiments"
+   - Modal can be closed by clicking outside, pressing ESC, or clicking X button
+
+5. **Visual Status Indicators**: Color-coded payload cards
+   - **Active Experiments**: Green gradient background, green left border, green shadow
+     - "✅ Active" badge in top-right corner
+     - Automatically updates when metadata is fetched
+   - **Inactive Experiments**: Gray gradient background, gray left border, gray shadow
+     - "📜 History" badge in top-right corner
+     - Status determined when clicking to view metadata
+   - **Invalid Sensors**: Red validation section (failed validation)
+
+6. **Error/Debug Dashboard**: Separate section for validation errors
    - Displays validation errors for sensors that don't meet display criteria
    - Shows error message and details from `validation.message` and `validation.error`
    - Displays LLA, MAC Address, and Hostname for each error
@@ -243,6 +355,23 @@ The frontend dashboard (`http://localhost:8000/`) provides:
   - Shows validation errors that don't meet display criteria
   - Displays full error details including message and error field
   - Tracks sensor information (LLA, MAC, Hostname) for debugging
+- **Metadata Modal**:
+  - Click any payload card to view detailed metadata
+  - Automatically filters for `Active_Exp = True` when displaying active experiments
+  - Shows experiment history with dropdown for inactive experiments
+  - Groups metadata by experiment (`Exp_ID_Exp_Name`)
+  - Displays formatted dates and structured information
+  - Visual separation between active (green) and inactive (gray) experiments
+- **Visual Status Indicators**:
+  - Payload cards automatically update with status badges after metadata fetch
+  - Green theme for sensors with active experiments
+  - Gray theme for sensors with only inactive/historical experiments
+  - Status badges appear in top-right corner of each card
+  - Hover effects match the card's status theme
+- **Editable Metadata (Planned)**:
+  - Inactive experiment metadata will be editable (all fields except Frequency, LLA, RFID)
+  - "Save Changes" button per sensor to send updates via WebSocket
+  - Updates will be sent to backend for processing (planned feature)
 
 ## Testing
 
@@ -351,6 +480,17 @@ async def your_bigquery_function(dataset: str, table: str):
     # Your BigQuery query logic
 ```
 
+**Adding WebSocket Message Types:**
+Modify `src/api/websocket_endpoints.py` to handle different message types:
+```python
+# In websocket_ping function, check payload type
+if data.get("type") == "metadata_update":
+    # Handle metadata update
+    # Return acknowledgment
+elif data.get("type") == "ping":
+    # Handle ping payload
+```
+
 ## Dependencies
 
 - **FastAPI**: Web framework for building APIs
@@ -374,6 +514,8 @@ The application uses structured logging with timestamps and operation tracking:
   - `[WEBSOCKET_PING]` - Payload processing and validation
   - `[BROADCAST]` - Message broadcasting
   - `[VALIDATE_SENSOR_LLA]` - BigQuery validation operations
+  - `[QUERY_ACTIVE_METADATA]` - Metadata query operations
+  - `[METADATA_UPDATE]` - Metadata update processing (planned)
 
 Example log output:
 ```
@@ -394,6 +536,24 @@ Example log output:
 - BigQuery credentials are loaded from `auth/.env` file at startup
 - Sensor validation queries the table: `{PROJECT_ID}.{hostname}.{mac_address}_metadata`
 - All operations are logged with timestamps and duration metrics for performance monitoring
+- Metadata queries return all data (active and inactive) - filtering done in frontend
+- Active/Inactive experiment separation is visual only - all metadata is available for both
+- Payload cards automatically update visual status after metadata is fetched
+- Modal can display multiple experiments if sensor participated in several
+- Experiment sorting uses `Exp_ID_Exp_Name` format for consistent ordering
+
+## Planned Features
+
+### Metadata Editing (In Development)
+- Editable fields for inactive experiments (all fields except Frequency, LLA, RFID)
+- "Save Changes" button per sensor to send updates
+- WebSocket integration for sending modified metadata to backend
+- Backend will receive and log metadata updates (no BigQuery writes yet)
+
+### CSV Export (Planned)
+- Download button for sensors with `Active_Exp = False`
+- CSV format: one row per sensor with all metadata fields
+- Bulk update capability for multiple sensors
 
 ## License
 

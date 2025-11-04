@@ -236,3 +236,162 @@ async def query_metadata_table(
         raise HTTPException(status_code=500, detail=f"BigQuery error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error querying table: {str(e)}")
+
+
+@router.get("/GCP-BQ/metadata/active")
+async def query_active_metadata(
+    hostname: str,
+    mac_address: str,
+    lla: str = None,
+    experiment: str = None,
+    all: bool = False
+):
+    """
+    Query metadata table for active experiments.
+    
+    Args:
+        hostname: Owner/hostname (e.g., "f4d_test")
+        mac_address: MAC address (e.g., "aaaaaaaaaaaa")
+        lla: Optional LLA value to filter by specific sensor
+        experiment: Optional experiment identifier in format "Exp_ID_Exp_Name" (e.g., "1_Image_V2")
+        all: If True, return all metadata for the mac_address (ignores lla and experiment)
+    
+    Returns:
+        dict: Query results with metadata in JSON format (all metadata, not filtered by Active_Exp)
+    
+    Example:
+        GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&lla=fd002124b00ccf7399b
+        GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&experiment=1_Image_V2
+        GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&all=true
+    """
+    operation_start = time.time()
+    logger.info(
+        f"[QUERY_ACTIVE_METADATA] Starting query | "
+        f"Hostname: {hostname} | "
+        f"MAC: {mac_address} | "
+        f"LLA: {lla} | "
+        f"Experiment: {experiment} | "
+        f"All: {all}"
+    )
+    
+    # Construct table name: {mac_address}_metadata
+    table_name = f"{mac_address}_metadata"
+    
+    # Construct dataset: use hostname
+    dataset = hostname
+    
+    # Construct full table identifier: project.dataset.table
+    full_table_name = f"{PROJECT_ID}.{dataset}.{table_name}"
+    
+    try:
+        # Get client
+        client = get_client()
+        
+        # Build query conditions
+        conditions = [
+            "Owner = @hostname",
+            "Mac_Address = @mac_address"
+        ]
+        
+        # Build query parameters
+        query_parameters = [
+            bigquery.ScalarQueryParameter("hostname", "STRING", hostname),
+            bigquery.ScalarQueryParameter("mac_address", "STRING", mac_address),
+        ]
+        
+        # Add LLA filter if provided and not querying all
+        if lla and not all:
+            conditions.append("LLA = @lla")
+            query_parameters.append(bigquery.ScalarQueryParameter("lla", "STRING", lla))
+        
+        # Add experiment filter if provided and not querying all
+        if experiment and not all:
+            # Parse experiment format: "Exp_ID_Exp_Name"
+            try:
+                parts = experiment.split("_", 1)
+                if len(parts) == 2:
+                    exp_id_str, exp_name = parts
+                    exp_id = int(exp_id_str)
+                    conditions.append("Exp_ID = @exp_id AND Exp_Name = @exp_name")
+                    query_parameters.append(bigquery.ScalarQueryParameter("exp_id", "INT64", exp_id))
+                    query_parameters.append(bigquery.ScalarQueryParameter("exp_name", "STRING", exp_name))
+                else:
+                    logger.warning(f"[QUERY_ACTIVE_METADATA] Invalid experiment format: {experiment}")
+            except ValueError as e:
+                logger.warning(f"[QUERY_ACTIVE_METADATA] Error parsing experiment ID: {e}")
+        
+        # Construct query - return all metadata (no Active_Exp filtering in backend)
+        where_clause = " AND ".join(conditions)
+        query = f"""
+        SELECT *
+        FROM `{full_table_name}`
+        WHERE {where_clause}
+        ORDER BY Exp_ID, Exp_Name, LLA
+        """
+        
+        # Use query parameters for safety
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=query_parameters
+        )
+        
+        # Execute query
+        query_start = time.time()
+        query_job = client.query(query, job_config=job_config)
+        results = query_job.result()
+        query_duration = time.time() - query_start
+        
+        # Convert results to list of dictionaries
+        rows = []
+        for row in results:
+            rows.append(dict(row))
+        
+        total_duration = time.time() - operation_start
+        
+        logger.info(
+            f"[QUERY_ACTIVE_METADATA] Query completed | "
+            f"Count: {len(rows)} | "
+            f"Query duration: {query_duration:.3f}s | "
+            f"Total duration: {total_duration:.3f}s"
+        )
+        
+        return {
+            "success": True,
+            "project": PROJECT_ID,
+            "dataset": dataset,
+            "table": table_name,
+            "full_table": full_table_name,
+            "count": len(rows),
+            "data": rows
+        }
+    
+    except NotFound as e:
+        error_msg = f"Metadata table not found: {full_table_name}"
+        total_duration = time.time() - operation_start
+        logger.warning(
+            f"[QUERY_ACTIVE_METADATA] Table not found | "
+            f"Table: {full_table_name} | "
+            f"Duration: {total_duration:.3f}s"
+        )
+        raise HTTPException(status_code=404, detail=error_msg)
+    
+    except GoogleCloudError as e:
+        error_msg = f"BigQuery error: {str(e)}"
+        total_duration = time.time() - operation_start
+        logger.error(
+            f"[QUERY_ACTIVE_METADATA] BigQuery error | "
+            f"Error: {error_msg} | "
+            f"Duration: {total_duration:.3f}s",
+            exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=error_msg)
+    
+    except Exception as e:
+        error_msg = f"Error querying metadata: {str(e)}"
+        total_duration = time.time() - operation_start
+        logger.error(
+            f"[QUERY_ACTIVE_METADATA] Unexpected error | "
+            f"Error: {error_msg} | "
+            f"Duration: {total_duration:.3f}s",
+            exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=error_msg)
