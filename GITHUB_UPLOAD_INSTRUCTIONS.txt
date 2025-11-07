@@ -1,0 +1,50 @@
+GitHub Upload Instructions
+==========================
+
+1. Check current status:
+   git status
+
+2. Stage all changes:
+   git add .
+
+3. Commit changes:
+   git commit -m "Your commit message here"
+
+4. Push to remote repository:
+   git push
+
+   OR if pushing for the first time:
+   git push -u origin dev
+
+5. If you encounter branch name issues (Dev vs dev):
+   git push -u origin Dev:dev
+
+Pushing to Main Branch (When Ready):
+=====================================
+
+1. Make sure all changes are committed and pushed to dev:
+   git status
+   git push
+
+2. Switch to main branch:
+   git checkout main
+
+3. Pull latest changes from main:
+   git pull origin main
+
+4. Merge dev into main:
+   git merge dev
+
+5. Push to main:
+   git push origin main
+
+6. Switch back to dev for continued work:
+   git checkout dev
+
+Tips:
+- Always check git status before committing
+- Write clear, descriptive commit messages
+- Pull changes before pushing if working with others: git pull
+- Current branch: dev (make sure you're on the correct branch)
+- Test thoroughly on dev before merging to main
+
