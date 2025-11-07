@@ -6,6 +6,7 @@ This folder contains authentication configuration for BigQuery using `.env` file
 
 1. **Create `auth/.env` file** with your Google Cloud credentials:
 
+
 ```env
 # Required - From your service account JSON file
 GCP_PROJECT_ID=project_name
