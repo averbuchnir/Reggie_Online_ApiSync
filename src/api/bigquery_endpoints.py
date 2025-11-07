@@ -253,11 +253,18 @@ async def query_active_metadata(
         hostname: Owner/hostname (e.g., "f4d_test")
         mac_address: MAC address (e.g., "aaaaaaaaaaaa")
         lla: Optional LLA value to filter by specific sensor
-        experiment: Optional experiment identifier in format "Exp_ID_Exp_Name" (e.g., "1_Image_V2")
+        experiment: Optional experiment identifier in format "Exp_ID_Exp_Name" (e.g., "1_Image_V2").
+                    Must have format: integer_ExperimentName. Returns HTTP 400 if format is invalid.
         all: If True, return all metadata for the mac_address (ignores lla and experiment)
     
     Returns:
         dict: Query results with metadata in JSON format (all metadata, not filtered by Active_Exp)
+    
+    Raises:
+        HTTPException 400: If experiment parameter format is invalid (must be "Exp_ID_Exp_Name" 
+                          where Exp_ID is an integer and Exp_Name is non-empty)
+        HTTPException 404: If metadata table not found
+        HTTPException 500: If BigQuery error occurs
     
     Example:
         GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&lla=fd002124b00ccf7399b
@@ -273,6 +280,10 @@ async def query_active_metadata(
         f"Experiment: {experiment} | "
         f"All: {all}"
     )
+    
+    # Validate experiment parameter early if provided
+    if experiment and not all:
+        logger.debug(f"[QUERY_ACTIVE_METADATA] Validating experiment parameter: '{experiment}'")
     
     # Construct table name: {mac_address}_metadata
     table_name = f"{mac_address}_metadata"
@@ -307,18 +318,64 @@ async def query_active_metadata(
         # Add experiment filter if provided and not querying all
         if experiment and not all:
             # Parse experiment format: "Exp_ID_Exp_Name"
+            # Must have format: number_ExperimentName (e.g., "1_Image_V2")
+            parts = experiment.split("_", 1)
+            
+            # Build example GET request for error messages
+            example_format = "1_Image_V2"
+            example_url = f"/GCP-BQ/metadata/active?hostname={hostname}&mac_address={mac_address}&experiment={example_format}"
+            
+            if len(parts) != 2:
+                error_msg = (
+                    f"Invalid experiment format: '{experiment}'. "
+                    f"Expected format: 'Exp_ID_Exp_Name' where Exp_ID is an integer and Exp_Name is the experiment name. "
+                    f"Example format: '{example_format}'. "
+                    f"Example GET request: GET {example_url}"
+                )
+                logger.warning(f"[QUERY_ACTIVE_METADATA] {error_msg}")
+                raise HTTPException(status_code=400, detail=error_msg)
+            
+            exp_id_str, exp_name = parts
+            
+            # Validate that Exp_ID is a valid integer
+            if not exp_id_str.strip():
+                error_msg = (
+                    f"Invalid experiment format: '{experiment}'. "
+                    f"Experiment ID cannot be empty. "
+                    f"Expected format: 'Exp_ID_Exp_Name' (e.g., '{example_format}'). "
+                    f"Example GET request: GET {example_url}"
+                )
+                logger.warning(f"[QUERY_ACTIVE_METADATA] {error_msg}")
+                raise HTTPException(status_code=400, detail=error_msg)
+            
             try:
-                parts = experiment.split("_", 1)
-                if len(parts) == 2:
-                    exp_id_str, exp_name = parts
-                    exp_id = int(exp_id_str)
-                    conditions.append("Exp_ID = @exp_id AND Exp_Name = @exp_name")
-                    query_parameters.append(bigquery.ScalarQueryParameter("exp_id", "INT64", exp_id))
-                    query_parameters.append(bigquery.ScalarQueryParameter("exp_name", "STRING", exp_name))
-                else:
-                    logger.warning(f"[QUERY_ACTIVE_METADATA] Invalid experiment format: {experiment}")
+                exp_id = int(exp_id_str)
             except ValueError as e:
-                logger.warning(f"[QUERY_ACTIVE_METADATA] Error parsing experiment ID: {e}")
+                error_msg = (
+                    f"Invalid experiment ID: '{exp_id_str}'. "
+                    f"Experiment ID must be a valid integer. "
+                    f"Received: '{experiment}'. "
+                    f"Expected format: 'Exp_ID_Exp_Name' (e.g., '{example_format}'). "
+                    f"Example GET request: GET {example_url}"
+                )
+                logger.warning(f"[QUERY_ACTIVE_METADATA] {error_msg} | Error: {e}")
+                raise HTTPException(status_code=400, detail=error_msg)
+            
+            # Validate that Exp_Name is not empty
+            if not exp_name or not exp_name.strip():
+                error_msg = (
+                    f"Invalid experiment format: '{experiment}'. "
+                    f"Experiment name cannot be empty. "
+                    f"Expected format: 'Exp_ID_Exp_Name' (e.g., '{example_format}'). "
+                    f"Example GET request: GET {example_url}"
+                )
+                logger.warning(f"[QUERY_ACTIVE_METADATA] {error_msg}")
+                raise HTTPException(status_code=400, detail=error_msg)
+            
+            # All validations passed - add to query
+            conditions.append("Exp_ID = @exp_id AND Exp_Name = @exp_name")
+            query_parameters.append(bigquery.ScalarQueryParameter("exp_id", "INT64", exp_id))
+            query_parameters.append(bigquery.ScalarQueryParameter("exp_name", "STRING", exp_name.strip()))
         
         # Construct query - return all metadata (no Active_Exp filtering in backend)
         where_clause = " AND ".join(conditions)
@@ -385,12 +442,24 @@ async def query_active_metadata(
         )
         raise HTTPException(status_code=500, detail=error_msg)
     
+    except HTTPException:
+        # Re-raise HTTPException (validation errors, etc.) without modification
+        raise
     except Exception as e:
-        error_msg = f"Error querying metadata: {str(e)}"
+        # Get more detailed error information
+        error_type = type(e).__name__
+        error_repr = repr(e)
+        error_str = str(e) if str(e) else "No error message available"
+        
+        error_msg = (
+            f"Error querying metadata: {error_str} "
+            f"(Type: {error_type})"
+        )
         total_duration = time.time() - operation_start
         logger.error(
             f"[QUERY_ACTIVE_METADATA] Unexpected error | "
-            f"Error: {error_msg} | "
+            f"Type: {error_type} | "
+            f"Error: {error_repr} | "
             f"Duration: {total_duration:.3f}s",
             exc_info=True
         )

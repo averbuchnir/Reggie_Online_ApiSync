@@ -155,24 +155,57 @@ Query metadata table for active or inactive experiments.
 - `hostname` (required): Owner/hostname (e.g., "f4d_test")
 - `mac_address` (required): MAC address (e.g., "aaaaaaaaaaaa")
 - `lla` (optional): Specific LLA value to filter by sensor
-- `experiment` (optional): Experiment identifier in format "Exp_ID_Exp_Name" (e.g., "1_Image_V2")
-- `all` (optional, default: false): If true, return all metadata for the mac_address
+- `experiment` (optional): Experiment identifier in format `Exp_ID_Exp_Name` where:
+  - `Exp_ID` must be a **valid integer** (e.g., `1`, `2`, `42`)
+  - `Exp_Name` must be a **non-empty string** (e.g., `Image_V2`, `Pilot_2`)
+  - Format: `{integer}_{experiment_name}` (e.g., `"1_Image_V2"`)
+  - Must be separated by a single underscore `_`
+  - Returns HTTP 400 with detailed error message if format is invalid
+- `all` (optional, default: false): If true, return all metadata for the mac_address (ignores `lla` and `experiment`)
 
-**Example:**
+**Examples:**
+
+✅ **Valid requests:**
 ```
+# Query by specific sensor (LLA)
 GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&lla=fd002124b00ccf7399b
+
+# Query by experiment (valid format: integer_ExperimentName)
 GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&experiment=1_Image_V2
+
+# Query all sensors for a MAC address
 GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&all=true
 ```
 
-**Response:**
+❌ **Invalid experiment formats (will return HTTP 400):**
+```
+# Wrong: Missing underscore separator
+GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&experiment=1Image_V2
+
+# Wrong: Non-numeric Exp_ID
+GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&experiment=Field4D_Pilot_2
+
+# Wrong: Empty Exp_Name
+GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&experiment=1_
+```
+
+**Error Response (HTTP 400):**
+When `experiment` parameter format is invalid, you'll receive a detailed error message:
+
+```json
+{
+  "detail": "Invalid experiment ID: 'Field4D'. Experiment ID must be a valid integer. Received: 'Field4D_Pilot_2'. Expected format: 'Exp_ID_Exp_Name' (e.g., '1_Image_V2'). Example GET request: GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&experiment=1_Image_V2"
+}
+```
+
+**Success Response:**
 ```json
 {
   "success": true,
-  "project": "project_name",
+  "project": "iucc-f4d",
   "dataset": "f4d_test",
   "table": "aaaaaaaaaaaa_metadata",
-  "full_table": "project_name.f4d_test.aaaaaaaaaaaa_metadata",
+  "full_table": "iucc-f4d.f4d_test.aaaaaaaaaaaa_metadata",
   "count": 7,
   "data": [
     {
@@ -181,18 +214,25 @@ GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&all=true
       "Exp_ID": 1,
       "Exp_Name": "Image_V2",
       "Active_Exp": true,
+      "LLA": "fd002124b00ccf7399b",
       // ... other metadata fields
     }
   ]
 }
 ```
 
+**Error Responses:**
+- **HTTP 400**: Invalid `experiment` parameter format (includes detailed error message with example)
+- **HTTP 404**: Metadata table not found for the given `hostname` and `mac_address`
+- **HTTP 500**: BigQuery error or unexpected server error (includes error type and details)
+
 **Notes:**
-- Returns all metadata (both active and inactive) - filtering is done in frontend
+- Returns all metadata (both active and inactive) - filtering by `Active_Exp` is done in frontend
 - Constructs table name as: `{mac_address}_metadata`
 - Uses `hostname` as the dataset name
 - Supports filtering by LLA, experiment, or all sensors
-- No `Active_Exp` filtering in backend - all data returned for frontend processing
+- Experiment validation provides clear error messages with format examples and full GET request examples
+- Only one filter can be used at a time: `lla`, `experiment`, or `all=true` (mutually exclusive)
 
 ### WebSocket Endpoints
 
