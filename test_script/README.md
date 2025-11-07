@@ -127,7 +127,7 @@ Status Code: 200
 
 Response Summary:
   - Success: True
-  - Project: iucc-f4d
+  - Project: project_name
   - Dataset: f4d_test
   - Table: aaaaaaaaaaaaa_metadata
   - Count: 50 rows

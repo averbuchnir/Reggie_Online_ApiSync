@@ -8,17 +8,17 @@ This folder contains authentication configuration for BigQuery using `.env` file
 
 ```env
 # Required - From your service account JSON file
-GCP_PROJECT_ID=iucc-f4d
-GCP_CLIENT_EMAIL=query-from-bq@iucc-f4d.iam.gserviceaccount.com
-GCP_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDV/0qYhdMbBGIO\\n... (replace \\n with actual newlines)\\n-----END PRIVATE KEY-----
+GCP_PROJECT_ID=project_name
+GCP_CLIENT_EMAIL=
+GCP_PRIVATE_KEY=-
 
 # Optional but recommended
-GCP_AUTH_URI=https://accounts.google.com/o/oauth2/auth
-GCP_TOKEN_URI=https://oauth2.googleapis.com/token
-GCP_auth_provider_x509_cert_url=https://www.googleapis.com/oauth2/v1/certs
-GCP_CLIENT_ID=114940523003685681884
-GCP_PRIVATE_KEY_ID=70720cec56d8c90319dcd4cbffbe7f8861300fe1
-GCP_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/query-from-bq%40iucc-f4d.iam.gserviceaccount.com
+GCP_AUTH_URI=
+GCP_TOKEN_URI=
+GCP_auth_provider_x509_cert_url=
+GCP_CLIENT_ID=
+GCP_PRIVATE_KEY_ID=
+GCP_CLIENT_X509_CERT_URL=
 ```
 
 2. **Copy values from your `read_BQ.json` file:**
@@ -30,7 +30,7 @@ GCP_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/query
 ## Environment Variables
 
 ### Required:
-- `GCP_PROJECT_ID`: Your BigQuery project ID (e.g., "iucc-f4d")
+- `GCP_PROJECT_ID`: Your BigQuery project ID (e.g., "project_name")
 - `GCP_CLIENT_EMAIL`: Service account email from JSON credentials
 - `GCP_PRIVATE_KEY`: Private key from JSON (use `\\n` for newlines in .env file)
 
@@ -58,7 +58,7 @@ The code loads credentials in this priority:
 In your `.env` file, the private key should use `\\n` for newlines:
 
 ```
-GCP_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDV/0qYhdMbBGIO\\nnmH5cKZxIITb5egzqmaIOCU3U2Xq6SvFQ8z9/bfpNO0lX2TA5mgWzjIGKtTjrTdk\\n...\\n-----END PRIVATE KEY-----
+GCP_PRIVATE_KEY=
 ```
 
 The code automatically converts `\\n` back to actual newlines when loading credentials.

@@ -36,12 +36,12 @@ ApiSync/
 │   └── README.md                  # Auth setup documentation
 ├── frontend/
 │   └── index.html                 # Web dashboard interface
-├── test_script/
+├── test_script/b
 │   ├── README.md                  # Testing documentation
 │   ├── 1.test_websocket.py        # Python WebSocket test script
 │   ├── 2.test_bigquery.py         # Python BigQuery test script
 │   └── output/                     # Test output files (CSV)
-├── requirements.txt               # Python dependencies
+├── requirements.txt               # Python dependenciesdd
 └── README.md                      # This file
 ```
 
@@ -124,10 +124,10 @@ GET /GCP-BQ/metadata?dataset=f4d_test&table=aaaaaaaaaaaa_metadata&limit=50
 ```json
 {
   "success": true,
-  "project": "iucc-f4d",
-  "dataset": "f4d_test",
-  "table": "aaaaaaaaaaaa_metadata",
-  "full_table": "iucc-f4d.f4d_test.aaaaaaaaaaaa_metadata",
+  "project": "project_name",
+  "dataset": "DB_Name",
+  "table": "MAC_metadata",
+  "full_table": "{project_name}_{DB_name}_{MAC_metadata}",
   "limit": 50,
   "offset": 0,
   "count": 50,
@@ -143,7 +143,7 @@ GET /GCP-BQ/metadata?dataset=f4d_test&table=aaaaaaaaaaaa_metadata&limit=50
 ```
 
 **Notes:**
-- Project ID is constant: `iucc-f4d`
+- Project ID is constant: `project_name`
 - Dataset and table are specified as query parameters
 - Returns JSON with paginated results
 
@@ -169,10 +169,10 @@ GET /GCP-BQ/metadata/active?hostname=f4d_test&mac_address=aaaaaaaaaaaa&all=true
 ```json
 {
   "success": true,
-  "project": "iucc-f4d",
+  "project": "project_name",
   "dataset": "f4d_test",
   "table": "aaaaaaaaaaaa_metadata",
-  "full_table": "iucc-f4d.f4d_test.aaaaaaaaaaaa_metadata",
+  "full_table": "project_name.f4d_test.aaaaaaaaaaaa_metadata",
   "count": 7,
   "data": [
     {
@@ -598,7 +598,7 @@ Example log output:
 ┌─────────▼─────────────────────────────────────────────────────────┐
 │              GOOGLE CLOUD BIGQUERY                                │
 │                                                                   │
-│  Project: iucc-f4d                                                │
+│  Project: project_name                                                │
 │  Dataset: {hostname} (e.g., "f4d_test")                          │
 │  Table: {mac_address}_metadata (e.g., "aaaaaaaaaaaa_metadata")   │
 │                                                                   │
@@ -731,7 +731,7 @@ WebSocket Payload Received
 - Duplicate sensors trigger blink animation if validation passes
 - Timestamps are in ISO 8601 format without milliseconds
 - All endpoints support CORS for cross-origin requests
-- BigQuery queries use project ID `iucc-f4d` by default (configured in `.env`)
+- BigQuery queries use project ID `project_name` by default (configured in `.env`)
 - BigQuery credentials are loaded from `auth/.env` file at startup
 - Sensor validation queries the table: `{PROJECT_ID}.{hostname}.{mac_address}_metadata`
 - All operations are logged with timestamps and duration metrics for performance monitoring
